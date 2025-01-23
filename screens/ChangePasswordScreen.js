@@ -10,6 +10,7 @@ import {
 import * as Animatable from "react-native-animatable";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useTheme } from "./ThemeContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ChangePasswordScreen = ({ navigation }) => {
   const [oldPassword, setOldPassword] = useState("");
@@ -23,30 +24,54 @@ const ChangePasswordScreen = ({ navigation }) => {
 
   const handleChangePassword = async () => {
     if (!oldPassword || !newPassword || !confirmNewPassword) {
-      Alert.alert("Error", "Please fill in all fields");
+      Alert.alert("Error", translations.allFieldsRequired);
       return;
     }
     if (newPassword !== confirmNewPassword) {
-      Alert.alert("Error", "New passwords do not match");
+      Alert.alert("Error", translations.passwordsDoNotMatch);
       return;
     }
+
     try {
-      const response = await fetch("http://192.168.10.8:5000/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ oldPassword, newPassword }),
-      });
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        Alert.alert("Error", translations.notAuthenticated);
+        navigation.replace("Login");
+        return;
+      }
+
+      const response = await fetch(
+        "http://192.168.10.13:5000/change-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ oldPassword, newPassword }),
+        }
+      );
 
       const data = await response.json();
+
       if (response.status === 200) {
-        Alert.alert("Success", "Password changed successfully");
+        Alert.alert("Success", translations.passwordChangedSuccess);
+        // Clear the input fields
+        setOldPassword("");
+        setNewPassword("");
+        setConfirmNewPassword("");
         navigation.goBack();
       } else {
-        Alert.alert("Error", data.error || "Failed to change password");
+        Alert.alert(
+          "Error",
+          data.error === "Old password is incorrect"
+            ? translations.oldPasswordIncorrect
+            : translations.passwordChangeFailed
+        );
       }
     } catch (error) {
       console.error("Change password error:", error);
-      Alert.alert("Error", "Something went wrong");
+      Alert.alert("Error", translations.somethingWentWrong);
     }
   };
 

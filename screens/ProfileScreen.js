@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,37 +7,201 @@ import {
   TouchableOpacity,
   ScrollView,
   Switch,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useTheme } from "./ThemeContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
 
-const ProfileScreen = ({ navigation }) => {
+const ProfileScreen = ({ navigation, route }) => {
+  const [userData, setUserData] = useState({
+    name: "Loading...",
+    email: "Loading...",
+    profileImage: null,
+  });
+
+  useEffect(() => {
+    fetchUserData();
+    requestGalleryPermission();
+    const checkToken = async () => {
+      const token = await AsyncStorage.getItem("userToken");
+      console.log("Stored token:", token);
+    };
+    checkToken();
+  }, []);
+
+  const requestGalleryPermission = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission needed",
+        "Please allow access to your photo gallery"
+      );
+    }
+  };
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+        base64: true,
+        width: 100,
+        height: 100,
+      });
+
+      if (!result.canceled) {
+        const token = await AsyncStorage.getItem("userToken");
+        console.log("Starting image upload...");
+
+        let base64Image = result.assets[0].base64;
+
+        const fileSizeInMB = (base64Image.length * 0.75) / (1024 * 1024);
+        console.log("File size:", fileSizeInMB, "MB");
+
+        if (fileSizeInMB > 1000) {
+          Alert.alert(
+            "Image too large",
+            "Please select an image smaller than 500KB"
+          );
+          return;
+        }
+
+        if (base64Image.includes(",")) {
+          base64Image = base64Image.split(",")[1];
+        }
+
+        const response = await fetch(
+          "http://192.168.10.13:5000/upload-profile",
+          {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              image: base64Image,
+            }),
+          }
+        );
+
+        console.log("Response status:", response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Error response:", errorText);
+
+          if (response.status === 413) {
+            Alert.alert(
+              "Error",
+              "Image is too large. Please choose a smaller image or try again."
+            );
+            return;
+          }
+
+          throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Upload success:", data.success);
+
+        if (data.success) {
+          setUserData((prev) => ({
+            ...prev,
+            profileImage: data.imageUrl,
+          }));
+          Alert.alert("Success", "Profile image updated successfully");
+          await fetchUserData();
+        } else {
+          throw new Error(data.error || "Upload failed");
+        }
+      }
+    } catch (error) {
+      console.error("Upload error details:", error);
+      Alert.alert(
+        "Error",
+        "Failed to update profile image. Please try again with a smaller image."
+      );
+    }
+  };
+
+  const fetchUserData = async () => {
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        navigation.replace("Login");
+        return;
+      }
+
+      const response = await fetch("http://192.168.10.13:5000/profile", {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Profile data:", data);
+
+      if (data.user) {
+        setUserData({
+          name: data.user.name || "No Name",
+          email: data.user.email || "No Email",
+          profileImage: data.user.profileImage,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      Alert.alert("Error", "Failed to load profile data");
+    }
+  };
+
+  const handleLogOut = async () => {
+    try {
+      await AsyncStorage.removeItem("userToken");
+      navigation.replace("Login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   const user = {
-    name: "Muflif Fathur",
-    email: "fathur0678@gmail.com",
-    bio: "Sport Lover | Tech lover",
+    ...userData,
     profileImage: "https://via.placeholder.com/150",
   };
 
   const { isDarkMode, toggleDarkMode, translations } = useTheme();
-
   const styles = getStyles(isDarkMode);
-
-  const handleLogOut = () => {
-    navigation.replace("Login");
-  };
 
   return (
     <ScrollView style={styles.container}>
       {/* Header Section */}
       <View style={styles.header}>
-        <Image
-          source={{ uri: user.profileImage }}
-          style={styles.profileImage}
-        />
-        <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userEmail}>{user.email}</Text>
-        <Text style={styles.userBio}>{user.bio}</Text>
+        <TouchableOpacity onPress={pickImage}>
+          <Image
+            source={
+              userData.profileImage
+                ? { uri: userData.profileImage }
+                : require("../assets/WHITEjpg.jpg")
+            }
+            style={styles.profileImage}
+          />
+          <View style={styles.editIconContainer}>
+            <Icon name="camera" size={20} color="#fff" />
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.userName}>{userData.name}</Text>
+        <Text style={styles.userEmail}>{userData.email}</Text>
       </View>
 
       {/* Your Activities Section */}
@@ -55,7 +219,11 @@ const ProfileScreen = ({ navigation }) => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.activityButton}
-            onPress={() => navigation.navigate("ReadingHistory")}
+            onPress={() => {
+              navigation.navigate("ReadingHistory", {
+                onGoBack: () => fetchUserData(),
+              });
+            }}
           >
             <Icon name="history" size={24} color="#CC0000" />
             <Text style={styles.activityText}>
@@ -126,6 +294,19 @@ const getStyles = (isDarkMode) =>
       marginBottom: 10,
       backgroundColor: "#ddd",
     },
+    editIconContainer: {
+      position: "absolute",
+      right: 0,
+      bottom: 10,
+      backgroundColor: "#CC0000",
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: "center",
+      alignItems: "center",
+      borderWidth: 2,
+      borderColor: "#fff",
+    },
     userName: {
       fontSize: 22,
       fontWeight: "bold",
@@ -134,12 +315,6 @@ const getStyles = (isDarkMode) =>
     userEmail: {
       fontSize: 14,
       marginVertical: 4,
-      color: isDarkMode ? "#ccc" : "#000",
-    },
-    userBio: {
-      fontSize: 14,
-      textAlign: "center",
-      marginTop: 4,
       color: isDarkMode ? "#ccc" : "#000",
     },
     section: {

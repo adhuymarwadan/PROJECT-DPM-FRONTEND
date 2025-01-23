@@ -17,6 +17,8 @@ import ProfileScreen from "./screens/ProfileScreen";
 import LanguageLocationScreen from "./screens/LanguageLocationScreen";
 import CategoriesScreen from "./screens/CategoriesScreen";
 import ChangePasswordScreen from "./screens/ChangePasswordScreen"; // Import ChangePasswordScreen
+import LikedArticles from "./screens/Likedarticles"; // Update import to match actual filename
+import ReadingHistory from "./screens/Readinghistory"; // Add this import
 
 // Create Navigators
 const Stack = createNativeStackNavigator();
@@ -77,7 +79,7 @@ const AppNavigator = () => {
             <Stack.Screen
               name="SignUp"
               component={SignupScreen}
-              options={{ title: "AllNews" }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="HomeScreen"
@@ -97,17 +99,45 @@ const AppNavigator = () => {
             <Stack.Screen
               name="LanguageLocation"
               component={LanguageLocationScreen}
-              options={{ title: "Language & Location" }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="Categories"
               component={CategoriesScreen}
-              options={{ title: "Categories" }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="ChangePassword"
               component={ChangePasswordScreen}
-              options={{ headerShown: false }} // Hide header
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="LikedArticles"
+              component={LikedArticles}
+              options={{
+                headerShown: false,
+                headerStyle: {
+                  backgroundColor: "#CC0000",
+                },
+                headerTintColor: "#fff",
+                headerTitleStyle: {
+                  fontWeight: "bold",
+                },
+              }}
+            />
+            <Stack.Screen
+              name="ReadingHistory"
+              component={ReadingHistory}
+              options={{
+                headerShown: false,
+                headerStyle: {
+                  backgroundColor: "#CC0000",
+                },
+                headerTintColor: "#fff",
+                headerTitleStyle: {
+                  fontWeight: "bold",
+                },
+              }}
             />
           </Stack.Navigator>
         </NavigationContainer>

@@ -19,6 +19,10 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
+    profileImage: {
+      type: String, // Akan menyimpan base64 string
+      default: null,
+    },
   },
   { timestamps: true }
 );
