@@ -85,7 +85,7 @@ const HomeScreen = ({ navigation, route }) => {
 
     // GNews API
     try {
-      const gNewsApiKey = "607638d0b716b0e20b4dd3a283af3524";
+      const gNewsApiKey = "62e698f8f556a0c185c61d199c521513";
       const gNewsUrl = `https://gnews.io/api/v4/top-headlines?category=${selectedCategory}&lang=id&country=id&apikey=${gNewsApiKey}`;
 
       const gNewsResponse = await fetch(gNewsUrl, {
@@ -118,7 +118,7 @@ const HomeScreen = ({ navigation, route }) => {
     }
     try {
       const mediastackResponse = await fetch(
-        `http://api.mediastack.com/v1/news?access_key=3256324621887e7b8aeceb9ea1fc89ca&countries=id&limit=20&sort=published_desc&language=id`,
+        `http://api.mediastack.com/v1/news?access_key=1920a2ee67cdfadef1a34907ded906b1&countries=id&limit=20&sort=published_desc&language=id`,
         {
           method: "GET",
           headers: {
@@ -153,9 +153,9 @@ const HomeScreen = ({ navigation, route }) => {
 
     // Combine and filter all articles
     const allArticles = [
+      ...mediastackArticles,
       ...indonesiaNewsArticles,
       ...gNewsArticles,
-      ...mediastackArticles,
     ].filter((article) => article.title && article.url);
 
     // Log article counts

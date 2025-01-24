@@ -62,37 +62,47 @@ const ArticleDetail = ({ route, navigation }) => {
 
     setIsTranslating(true);
     try {
-      // Jika bahasa sumber adalah Indonesia, tidak perlu diterjemahkan
-      if (selectedLanguage === "id") {
-        return {
-          text: text,
-          detectedLanguage: "id",
-        };
-      }
-
-      // Gunakan MyMemory API dengan parameter yang benar
+      // Use HTTPS URL and add proper headers for iOS
+      const encodedText = encodeURIComponent(text);
       const response = await fetch(
-        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
-          text
-        )}&langpair=${
+        `https://api.mymemory.translated.net/get?q=${encodedText}&langpair=${
           selectedLanguage === "auto" ? "auto" : selectedLanguage
-        }|id&de=your@email.com`
+        }|id`,
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0",
+          },
+        }
       );
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
-      console.log("Translation API Response:", data); // Untuk debugging
+      console.log("Translation response:", data); // For debugging
 
       if (data.responseData) {
         if (
           data.responseData.translatedText === text &&
           selectedLanguage !== "auto"
         ) {
-          // Jika teks hasil terjemahan sama dengan teks asli, coba gunakan deteksi otomatis
+          // Fallback to auto detection if direct translation fails
           const retryResponse = await fetch(
-            `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
-              text
-            )}&langpair=auto|id&de=your@email.com`
+            `https://api.mymemory.translated.net/get?q=${encodedText}&langpair=auto|id`,
+            {
+              method: "GET",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0",
+              },
+            }
           );
+
           const retryData = await retryResponse.json();
           return {
             text: retryData.responseData?.translatedText || text,
@@ -106,17 +116,13 @@ const ArticleDetail = ({ route, navigation }) => {
             data.responseData.detectedLanguage || selectedLanguage,
         };
       }
-      return { text: "", detectedLanguage: "" };
+      throw new Error("Invalid translation response");
     } catch (error) {
       console.error("Translation error:", error);
       Alert.alert(
         translations.alert.error,
-        translations.alert.translationError,
-        [
-          {
-            text: translations.alert.ok,
-          },
-        ]
+        "Translation service is currently unavailable. Please try again later.",
+        [{ text: "OK" }]
       );
       return { text: "", detectedLanguage: "" };
     } finally {

@@ -74,7 +74,7 @@ const SignupScreen = ({ navigation }) => {
         <View style={styles.inner}>
           <Animatable.View
             animation="fadeInDown"
-            duration={1500}
+            duration={800}
             style={styles.header}
           >
             <Text style={styles.headerText}>AllNews</Text>
@@ -85,7 +85,7 @@ const SignupScreen = ({ navigation }) => {
 
           <Animatable.View
             animation="fadeInUp"
-            duration={2000}
+            duration={1000}
             style={styles.card}
           >
             <Text style={styles.title}>{translations.signUp}</Text>

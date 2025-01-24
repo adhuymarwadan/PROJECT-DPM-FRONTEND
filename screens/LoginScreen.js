@@ -53,7 +53,10 @@ const LoginScreen = ({ navigation }) => {
         if (data.user) {
           await AsyncStorage.setItem("userData", JSON.stringify(data.user));
         }
-        navigation.replace("HomeScreen");
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "HomeScreen" }],
+        });
       } else {
         Alert.alert(
           "Error",
@@ -70,7 +73,7 @@ const LoginScreen = ({ navigation }) => {
       setIsLoading(false);
     }
   };
- 
+
   const handleLoginError = () => {
     Alert.alert(
       translations.alert.loginError,
@@ -92,7 +95,7 @@ const LoginScreen = ({ navigation }) => {
         <View style={styles.inner}>
           <Animatable.View
             animation="fadeInDown"
-            duration={1500}
+            duration={800}
             style={styles.header}
           >
             <Text style={styles.headerText}>AllNews</Text>
@@ -101,7 +104,7 @@ const LoginScreen = ({ navigation }) => {
 
           <Animatable.View
             animation="fadeInUp"
-            duration={2000}
+            duration={1000}
             style={styles.card}
           >
             <Text style={styles.title}>{translations.login}</Text>
