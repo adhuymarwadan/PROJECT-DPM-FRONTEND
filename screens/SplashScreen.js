@@ -43,7 +43,7 @@ const SplashScreen = ({ navigation }) => {
     // Navigasi ke layar berikutnya setelah 3 detik
     const timer = setTimeout(() => {
       navigation.replace("Login");
-    }, 3000);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [navigation]);
@@ -59,7 +59,7 @@ const SplashScreen = ({ navigation }) => {
         ]}
       />
       <Animated.Image
-        source={require("../assets/allnews-logo-removebg-preview.png")}
+        source={require("../assets/logo.png")}
         style={[
           styles.logo,
           { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },

@@ -79,8 +79,23 @@ const ReadingHistory = ({ navigation }) => {
   const renderArticle = ({ item, index }) => (
     <Animatable.View animation="fadeInUp" duration={1000} delay={index * 100}>
       <TouchableOpacity
-        onPress={async () => {
-          navigation.navigate("ArticleDetail", { article: item });
+        onPress={() => {
+          // Format article data properly before navigation
+          const formattedArticle = {
+            title: item.article.title,
+            description: item.article.description || item.article.content || "",
+            content: item.article.content || item.article.description || "",
+            image: item.article.image || item.article.urlToImage,
+            urlToImage: item.article.image || item.article.urlToImage,
+            publishedAt: item.readAt,
+            author: item.article.author || "AllNews",
+            category: "News",
+            source: { name: "Reading History" },
+          };
+
+          navigation.navigate("ArticleDetail", {
+            article: formattedArticle,
+          });
         }}
         style={styles.articleTouchable}
       >

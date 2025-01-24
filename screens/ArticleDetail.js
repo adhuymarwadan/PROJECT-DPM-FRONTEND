@@ -12,7 +12,9 @@ import {
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useTheme } from "./ThemeContext"; // Import useTheme
 import AsyncStorage from "@react-native-async-storage/async-storage";
-const defaultAuthorImage = require("../assets/allnews-logo-removebg-preview.png");
+const defaultAuthorImage = require("../assets/logo.png");
+
+const defaultArticleImage = require("../assets/WHITEjpg.jpg"); // Add this line
 
 const ArticleDetail = ({ route, navigation }) => {
   const { article } = route.params;
@@ -22,6 +24,16 @@ const ArticleDetail = ({ route, navigation }) => {
   const [showTranslation, setShowTranslation] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("auto"); // Tambahkan state untuk bahasa
 
+  const articleData = {
+    title: article?.title || "No Title",
+    description: article?.description || article?.content || "",
+    image: article?.image || article?.urlToImage,
+    publishedAt:
+      article?.publishedAt || article?.published_at || new Date().toISOString(),
+    category: article?.category || "News",
+    author: article?.author || "Anonymous",
+    comments: article?.comments || 0,
+  };
   // Daftar bahasa yang didukung (ditambah bahasa Indonesia, Rumania)
   const languages = {
     id: "Bahasa Indonesia",
@@ -163,23 +175,24 @@ const ArticleDetail = ({ route, navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Image and Overlay */}
       <View style={styles.imageContainer}>
         <Image
-          source={article.image ? { uri: article.image } : defaultArticleImage}
+          source={
+            articleData.image ? { uri: articleData.image } : defaultArticleImage
+          }
           style={styles.image}
+          defaultSource={defaultArticleImage}
         />
         <View style={styles.overlay}>
-          <Text style={styles.category}>{article.category || "Tech"}</Text>
-          <Text style={styles.title}>{article.title}</Text>
+          <Text style={styles.category}>{articleData.category}</Text>
+          <Text style={styles.title}>{articleData.title}</Text>
           <Text style={styles.meta}>
-            {article.published_at} |{" "}
-            {Math.ceil(article.description.length / 250)} min read
+            {new Date(articleData.publishedAt).toLocaleDateString()} |{" "}
+            {Math.ceil((articleData.description.length || 0) / 250)} min read
           </Text>
         </View>
       </View>
 
-      {/* Author Info */}
       <View style={styles.authorContainer}>
         <Image
           source={
