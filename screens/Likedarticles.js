@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "./ThemeContext";
+import Icon from "react-native-vector-icons/FontAwesome";
+import * as Animatable from "react-native-animatable";
 
 const LikedArticles = ({ navigation }) => {
   const [likedArticles, setLikedArticles] = useState([]);
@@ -52,20 +54,50 @@ const LikedArticles = ({ navigation }) => {
     }
   };
 
-  const renderArticle = ({ item }) => (
-    <TouchableOpacity
-      onPress={() => navigation.navigate("ArticleDetail", { article: item })}
-    >
-      <View style={styles.articleCard}>
-        {item.image && (
-          <Image source={{ uri: item.image }} style={styles.articleImage} />
-        )}
-        <Text style={styles.articleTitle}>{item.title}</Text>
-        <Text style={styles.articleDate}>
-          {new Date(item.createdAt).toLocaleDateString()}
-        </Text>
-      </View>
-    </TouchableOpacity>
+  const renderArticle = ({ item, index }) => (
+    <Animatable.View animation="fadeInUp" duration={1000} delay={index * 100}>
+      <TouchableOpacity
+        onPress={() =>
+          navigation.navigate("ArticleDetail", {
+            article: {
+              ...item,
+              description: item.description || item.content || "",
+              content: item.content || item.description || "",
+              url: item.url || "",
+              source: item.source || "Unknown",
+              publishedAt: item.createdAt || new Date().toISOString(),
+            },
+          })
+        }
+        style={styles.articleTouchable}
+      >
+        <View style={styles.articleCard}>
+          {item.image && (
+            <View style={styles.imageContainer}>
+              <Image
+                source={{ uri: item.image }}
+                style={styles.articleImage}
+                resizeMode="cover"
+              />
+              <View style={styles.heartIconContainer}>
+                <Icon name="heart" size={20} color="#CC0000" />
+              </View>
+            </View>
+          )}
+          <View style={styles.articleContent}>
+            <Text style={styles.articleTitle} numberOfLines={2}>
+              {item.title}
+            </Text>
+            <View style={styles.articleMetaContainer}>
+              <Text style={styles.articleDate}>
+                {new Date(item.createdAt).toLocaleDateString()}
+              </Text>
+              <Text style={styles.readMoreText}>Read More</Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Animatable.View>
   );
 
   const styles = StyleSheet.create({
@@ -75,30 +107,49 @@ const LikedArticles = ({ navigation }) => {
     },
     container: {
       flex: 1,
-      padding: 16,
+      paddingHorizontal: 16,
     },
     header: {
       fontSize: 24,
       fontWeight: "bold",
-      marginBottom: 16,
+      marginVertical: 16,
       color: isDarkMode ? "#fff" : "#000",
+      textAlign: "center",
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: 50,
+    },
+    articleTouchable: {
+      marginBottom: 12,
     },
     articleCard: {
       backgroundColor: isDarkMode ? "#333" : "#fff",
-      borderRadius: 8,
-      padding: 12,
-      marginBottom: 12,
-      elevation: 2,
+      borderRadius: 12,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+      overflow: "hidden",
+    },
+    imageContainer: {
+      position: "relative",
+      width: "100%",
     },
     articleImage: {
       width: "100%",
       height: 200,
-      borderRadius: 8,
-      marginBottom: 8,
+    },
+    heartIconContainer: {
+      position: "absolute",
+      top: 10,
+      right: 10,
+      backgroundColor: "rgba(255,255,255,0.8)",
+      borderRadius: 20,
+      padding: 8,
+    },
+    articleContent: {
+      padding: 12,
     },
     articleTitle: {
       fontSize: 16,
@@ -106,13 +157,24 @@ const LikedArticles = ({ navigation }) => {
       marginBottom: 8,
       color: isDarkMode ? "#fff" : "#000",
     },
+    articleMetaContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
     articleDate: {
       fontSize: 12,
       color: isDarkMode ? "#ccc" : "#666",
     },
+    readMoreText: {
+      fontSize: 12,
+      color: "#CC0000",
+      fontWeight: "600",
+    },
     emptyText: {
       textAlign: "center",
       fontSize: 16,
+      marginTop: 50,
       color: isDarkMode ? "#ccc" : "#666",
     },
   });
@@ -120,13 +182,21 @@ const LikedArticles = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <View style={styles.container}>
-        <Text style={styles.header}>
+        <Animatable.Text
+          animation="fadeInDown"
+          duration={1500}
+          style={styles.header}
+        >
           {translations.likedArticles || "Liked Articles"}
-        </Text>
+        </Animatable.Text>
         {likedArticles.length === 0 ? (
-          <Text style={styles.emptyText}>
+          <Animatable.Text
+            animation="fadeIn"
+            duration={1500}
+            style={styles.emptyText}
+          >
             {translations.noLikedArticles || "No liked articles yet"}
-          </Text>
+          </Animatable.Text>
         ) : (
           <FlatList
             data={likedArticles}
@@ -134,6 +204,7 @@ const LikedArticles = ({ navigation }) => {
             renderItem={renderArticle}
             onRefresh={fetchLikedArticles}
             refreshing={false}
+            showsVerticalScrollIndicator={false}
           />
         )}
       </View>

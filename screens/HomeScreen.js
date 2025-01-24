@@ -46,32 +46,49 @@ const HomeScreen = ({ navigation, route }) => {
 
   const fetchArticles = async () => {
     setLoading(true);
+    let gNewsArticles = [];
+    let indonesiaNewsArticles = [];
+    let mediastackArticles = [];
+
+    // Indonesia News API
     try {
-      const GNEWS_API_KEY = "54996baa29bf545de341762142ef190d";
-      console.log("Fetching articles for category:", selectedCategory);
+      const indonesiaNewsResponse = await fetch(
+        "https://indonesia-news.p.rapidapi.com/news/nasional",
+        {
+          method: "GET",
+          headers: {
+            "x-rapidapi-host": "indonesia-news.p.rapidapi.com",
+            "x-rapidapi-key":
+              "4f926be992mshca25f6b55656adfp1afdadjsnb0950702295f",
+          },
+        }
+      );
 
-      // Test API key dan akses
-      const testUrl = `https://gnews.io/api/v4/search?q=indonesia&lang=us&country=us&apikey=${GNEWS_API_KEY}&max=1`;
+      console.log("Indonesia News Response:", indonesiaNewsResponse.status);
+      const indonesiaNewsData = await indonesiaNewsResponse.json();
+      console.log("Indonesia News Data:", indonesiaNewsData);
 
-      console.log("Testing API access with URL:", testUrl);
+      if (indonesiaNewsData && indonesiaNewsData.data) {
+        indonesiaNewsArticles = indonesiaNewsData.data.map((article) => ({
+          title: article.title,
+          description: article.description || article.contentSnippet || "",
+          url: article.link || article.url,
+          image: article.image || article.thumbnail,
+          publishedAt: article.isoDate || article.pubDate,
+          source: "Indonesia News",
+          content: article.content || article.contentSnippet || "",
+        }));
+      }
+    } catch (error) {
+      console.error("Indonesia News API error:", error);
+    }
 
-      const testResponse = await fetch(testUrl);
-      const testData = await testResponse.json();
+    // GNews API
+    try {
+      const gNewsApiKey = "54996baa29bf545de341762142ef190d";
+      const gNewsUrl = `https://gnews.io/api/v4/top-headlines?category=${selectedCategory}&lang=id&country=id&apikey=${gNewsApiKey}`;
 
-      console.log("API Test Response:", {
-        status: testResponse.status,
-        remaining: testResponse.headers.get("x-ratelimit-remaining"),
-        total: testResponse.headers.get("x-ratelimit-limit"),
-        articleCount: testData.articles?.length || 0,
-        errors: testData.errors,
-      });
-
-      const timestamp = new Date().getTime();
-      const apiUrl = `https://gnews.io/api/v4/top-headlines?category=${selectedCategory}&lang=id&country=id&apikey=${GNEWS_API_KEY}&max=20&t=${timestamp}`;
-
-      console.log("Fetching from URL:", apiUrl);
-
-      const response = await fetch(apiUrl, {
+      const gNewsResponse = await fetch(gNewsUrl, {
         method: "GET",
         headers: {
           Accept: "application/json",
@@ -79,85 +96,82 @@ const HomeScreen = ({ navigation, route }) => {
         },
       });
 
-      console.log("API Response status:", response.status);
+      console.log("GNews Response:", gNewsResponse.status);
+      const gNewsData = await gNewsResponse.json();
+      console.log("GNews Data:", gNewsData);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("API Error response:", errorText);
-
-        switch (response.status) {
-          case 401:
-            throw new Error("Invalid API key. Please check your API key.");
-          case 403:
-            throw new Error("API key quota exceeded.");
-          case 429:
-            throw new Error("Too many requests. Please try again later.");
-          default:
-            throw new Error(`GNews API error: ${response.status}`);
-        }
+      if (gNewsData && gNewsData.articles) {
+        gNewsArticles = gNewsData.articles.map((article) => ({
+          title: article.title,
+          description: article.description || "",
+          url: article.url,
+          image: article.image
+            ? article.image.replace("http://", "https://")
+            : null,
+          publishedAt: article.publishedAt,
+          source: article.source?.name || "GNews",
+          content: article.content || "",
+        }));
       }
-
-      const data = await response.json();
-      console.log("Received articles count:", data.articles?.length);
-
-      if (!data.articles || data.articles.length === 0) {
-        console.log("No articles received");
-        setArticles([]);
-        setFilteredArticles([]);
-        return;
-      }
-
-      const validArticles = data.articles
-        .filter((article) => {
-          const isValid = article.title && article.url;
-          if (!isValid) {
-            console.log("Invalid article found:", article);
-          }
-          return isValid;
-        })
-        .map((article) => {
-          let imageUrl = article.image;
-          if (imageUrl) {
-            imageUrl = imageUrl.replace("http://", "https://");
-          }
-
-          return {
-            title: article.title,
-            description: article.description || "",
-            url: article.url,
-            image: imageUrl || null,
-            publishedAt: article.publishedAt,
-            source: article.source?.name || "Unknown Source",
-            content: article.content || article.description || "",
-          };
-        });
-
-      console.log("Processed valid articles count:", validArticles.length);
-
-      setArticles(validArticles);
-      setFilteredArticles(validArticles);
     } catch (error) {
-      console.error("Error fetching articles:", error);
-
-      // Tampilkan pesan error yang lebih informatif
-      let errorMessage = "Failed to fetch news. ";
-      if (error.message.includes("API key")) {
-        errorMessage +=
-          "There's an issue with the API key. Please try again later.";
-      } else if (error.message.includes("quota")) {
-        errorMessage += "Daily API quota has been exceeded.";
-      } else {
-        errorMessage += "Please check your internet connection.";
+      console.error("GNews API error:", error);
+    }
+    try {
+      const mediastackResponse = await fetch(
+        `http://api.mediastack.com/v1/news?access_key=3256324621887e7b8aeceb9ea1fc89ca&countries=id&limit=20&sort=published_desc&language=id`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (!mediastackResponse.ok) {
+        const errorData = await mediastackResponse.json();
+        console.error("Mediastack API Error:", errorData);
+        throw new Error(`Mediastack API Error: ${JSON.stringify(errorData)}`);
       }
 
-      Alert.alert("Error", errorMessage);
+      const mediastackData = await mediastackResponse.json();
+      console.log("Mediastack Data:", mediastackData);
+      console.log("Mediastack Data:", mediastackData);
 
-      setArticles([]);
-      setFilteredArticles([]);
-    } finally {
-      setLoading(false);
+      if (mediastackData && mediastackData.data) {
+        mediastackArticles = mediastackData.data.map((article) => ({
+          title: article.title,
+          description: article.description || "",
+          url: article.url,
+          image: article.image,
+          publishedAt: article.published_at,
+          source: article.source || "Mediastack",
+          content: article.description || "",
+        }));
+      }
+    } catch (error) {
+      console.error("Mediastack API error:", error);
     }
+
+    // Combine and filter all articles
+    const allArticles = [
+      ...indonesiaNewsArticles,
+      ...gNewsArticles,
+      ...mediastackArticles,
+    ].filter((article) => article.title && article.url);
+
+    // Log article counts
+    console.log("Total articles:", allArticles.length);
+    console.log("Mediastack:", mediastackArticles.length);
+    console.log("Indonesia News:", indonesiaNewsArticles.length);
+    console.log("GNews:", gNewsArticles.length);
+
+    setArticles(allArticles);
+    setFilteredArticles(allArticles);
+    setLoading(false);
   };
+
+  useEffect(() => {
+    fetchArticles();
+  }, [selectedCategory]);
 
   const categories = {
     business: "business",

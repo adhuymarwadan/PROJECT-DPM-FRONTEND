@@ -7,6 +7,20 @@ const LanguageLocationScreen = ({ navigation }) => {
   const { isDarkMode, language, changeLanguage, translations } = useTheme();
   const styles = getStyles(isDarkMode);
 
+  const LanguageButton = ({ lang, label }) => (
+    <TouchableOpacity
+      style={[
+        styles.button,
+        language === lang && styles.activeButton,
+        styles.buttonShadow,
+      ]}
+      onPress={() => changeLanguage(lang)}
+      activeOpacity={0.7}
+    >
+      <Text style={styles.buttonText}>{label}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       <Animatable.View
@@ -18,19 +32,8 @@ const LanguageLocationScreen = ({ navigation }) => {
       </Animatable.View>
 
       <Animatable.View animation="fadeInUp" duration={2000} style={styles.card}>
-        <TouchableOpacity
-          style={[styles.button, language === "en" && styles.activeButton]}
-          onPress={() => changeLanguage("en")}
-        >
-          <Text style={styles.buttonText}>English</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, language === "id" && styles.activeButton]}
-          onPress={() => changeLanguage("id")}
-        >
-          <Text style={styles.buttonText}>Indonesia</Text>
-        </TouchableOpacity>
+        <LanguageButton lang="en" label="English" />
+        <LanguageButton lang="id" label="Indonesia" />
       </Animatable.View>
     </View>
   );
@@ -45,32 +48,41 @@ const getStyles = (isDarkMode) =>
       backgroundColor: isDarkMode ? "#1a1a1a" : "#E0E0E0",
     },
     header: {
-      marginBottom: 20,
+      marginBottom: 30,
       alignItems: "center",
     },
     headerText: {
       fontSize: 30,
       fontWeight: "bold",
       color: isDarkMode ? "#fff" : "#1a1a1a",
+      letterSpacing: 1,
     },
     card: {
       backgroundColor: isDarkMode ? "#333" : "#f7f7f7",
       borderRadius: 20,
-      padding: 20,
-      elevation: 10,
+      padding: 25,
+      elevation: 12,
       width: "90%",
       shadowColor: "#000",
-      shadowOpacity: 0.2,
-      shadowOffset: { width: 0, height: 2 },
-      shadowRadius: 8,
+      shadowOpacity: 0.3,
+      shadowOffset: { width: 0, height: 4 },
+      shadowRadius: 10,
     },
     button: {
       backgroundColor: "#CC0000",
-      paddingVertical: 12,
-      borderRadius: 8,
-      marginVertical: 10,
+      paddingVertical: 15,
+      borderRadius: 12,
+      marginVertical: 12,
       width: "100%",
       alignItems: "center",
+      justifyContent: "center",
+    },
+    buttonShadow: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
     },
     activeButton: {
       backgroundColor: "#990000",
@@ -81,6 +93,7 @@ const getStyles = (isDarkMode) =>
       color: "#ffffff",
       fontSize: 18,
       fontWeight: "bold",
+      letterSpacing: 1,
     },
   });
 

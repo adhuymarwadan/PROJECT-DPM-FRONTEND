@@ -24,27 +24,12 @@ app.use(bodyParser.urlencoded({ limit: "100mb", extended: true }));
 // Endpoint untuk upload profile image (pindahkan ke atas sebelum static files)
 app.post("/upload-profile", authenticateToken, async (req, res) => {
   try {
-    console.log("Received upload request");
-
     const { image } = req.body;
+
     if (!image) {
       return res.status(400).json({
         success: false,
         error: "No image provided",
-      });
-    }
-
-    // Tambahkan prefix data URL jika belum ada
-    const imageWithPrefix = image.startsWith("data:image")
-      ? image
-      : `data:image/jpeg;base64,${image}`;
-
-    // Validasi ukuran (500KB limit)
-    const sizeInMB = (image.length * 0.75) / (1024 * 1024);
-    if (sizeInMB > 0.5) {
-      return res.status(413).json({
-        success: false,
-        error: "Image too large (max 500KB)",
       });
     }
 
@@ -56,23 +41,22 @@ app.post("/upload-profile", authenticateToken, async (req, res) => {
       });
     }
 
-    // Simpan gambar dengan prefix
-    user.profileImage = imageWithPrefix;
+    // Update user's profile image
+    user.profileImage = image;
     await user.save();
 
-    res.status(200).json({
+    res.json({
       success: true,
-      imageUrl: imageWithPrefix,
+      imageUrl: image,
       message: "Profile image updated successfully",
     });
   } catch (error) {
     console.error("Upload error:", error);
     res.status(500).json({
       success: false,
-      error: "Server error",
+      error: "Failed to update profile image",
     });
   }
-  s;
 });
 // Middleware untuk CORS
 app.use((req, res, next) => {

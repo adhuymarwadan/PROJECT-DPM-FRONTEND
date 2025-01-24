@@ -47,85 +47,56 @@ const ProfileScreen = ({ navigation, route }) => {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.7,
+        quality: 0.3,
         base64: true,
-        width: 100,
-        height: 100,
       });
 
       if (!result.canceled) {
         const token = await AsyncStorage.getItem("userToken");
-        console.log("Starting image upload...");
-
-        let base64Image = result.assets[0].base64;
-
-        const fileSizeInMB = (base64Image.length * 0.75) / (1024 * 1024);
-        console.log("File size:", fileSizeInMB, "MB");
-
-        if (fileSizeInMB > 1000) {
-          Alert.alert(
-            "Image too large",
-            "Please select an image smaller than 500KB"
-          );
+        if (!token) {
+          Alert.alert("Error", "Please login again");
           return;
         }
 
-        if (base64Image.includes(",")) {
-          base64Image = base64Image.split(",")[1];
-        }
+        setUserData((prev) => ({
+          ...prev,
+          profileImage: `data:image/jpeg;base64,${result.assets[0].base64}`,
+        }));
 
-        const response = await fetch(
-          "http://192.168.10.13:5000/upload-profile",
-          {
-            method: "POST",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              image: base64Image,
-            }),
+        try {
+          const response = await fetch(
+            "http://192.168.10.13:5000/upload-profile",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                image: `data:image/jpeg;base64,${result.assets[0].base64}`,
+              }),
+            }
+          );
+
+          const data = await response.json();
+
+          if (data.success) {
+            Alert.alert("Success", "Profile image updated successfully");
+          } else {
+            throw new Error(data.error || "Failed to update profile image");
           }
-        );
-
-        console.log("Response status:", response.status);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("Error response:", errorText);
-
-          if (response.status === 413) {
-            Alert.alert(
-              "Error",
-              "Image is too large. Please choose a smaller image or try again."
-            );
-            return;
-          }
-
-          throw new Error(`Server error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("Upload success:", data.success);
-
-        if (data.success) {
-          setUserData((prev) => ({
-            ...prev,
-            profileImage: data.imageUrl,
-          }));
-          Alert.alert("Success", "Profile image updated successfully");
+        } catch (uploadError) {
+          console.error("Upload error:", uploadError);
           await fetchUserData();
-        } else {
-          throw new Error(data.error || "Upload failed");
+          Alert.alert(
+            "Error",
+            "Failed to update profile image. Please try again with a smaller image."
+          );
         }
       }
     } catch (error) {
-      console.error("Upload error details:", error);
-      Alert.alert(
-        "Error",
-        "Failed to update profile image. Please try again with a smaller image."
-      );
+      console.error("Image picker error:", error);
+      Alert.alert("Error", "Failed to select image");
     }
   };
 
@@ -140,8 +111,6 @@ const ProfileScreen = ({ navigation, route }) => {
       const response = await fetch("http://192.168.10.13:5000/profile", {
         method: "GET",
         headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
@@ -151,8 +120,6 @@ const ProfileScreen = ({ navigation, route }) => {
       }
 
       const data = await response.json();
-      console.log("Profile data:", data);
-
       if (data.user) {
         setUserData({
           name: data.user.name || "No Name",
@@ -175,19 +142,17 @@ const ProfileScreen = ({ navigation, route }) => {
     }
   };
 
-  const user = {
-    ...userData,
-    profileImage: "https://via.placeholder.com/150",
-  };
-
   const { isDarkMode, toggleDarkMode, translations } = useTheme();
   const styles = getStyles(isDarkMode);
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header Section */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={pickImage}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header Section with Improved Layout */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity
+          onPress={pickImage}
+          style={styles.profileImageWrapper}
+        >
           <Image
             source={
               userData.profileImage
@@ -197,79 +162,112 @@ const ProfileScreen = ({ navigation, route }) => {
             style={styles.profileImage}
           />
           <View style={styles.editIconContainer}>
-            <Icon name="camera" size={20} color="#fff" />
+            <Icon name="camera" size={16} color="#fff" />
           </View>
         </TouchableOpacity>
-        <Text style={styles.userName}>{userData.name}</Text>
-        <Text style={styles.userEmail}>{userData.email}</Text>
+        <Text style={styles.userName} numberOfLines={1}>
+          {userData.name}
+        </Text>
+        <Text style={styles.userEmail} numberOfLines={1}>
+          {userData.email}
+        </Text>
       </View>
 
-      {/* Your Activities Section */}
-      <View style={[styles.section, styles.card]}>
-        <Text style={styles.sectionTitle}>{translations.yourActivities}</Text>
-        <View style={styles.activityRow}>
-          <TouchableOpacity
-            style={styles.activityButton}
-            onPress={() => navigation.navigate("LikedArticles")}
-          >
-            <Icon name="heart" size={24} color="#CC0000" />
-            <Text style={styles.activityText}>
-              {translations.likedArticles}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.activityButton}
-            onPress={() => {
-              navigation.navigate("ReadingHistory", {
-                onGoBack: () => fetchUserData(),
-              });
-            }}
-          >
-            <Icon name="history" size={24} color="#CC0000" />
-            <Text style={styles.activityText}>
-              {translations.readingHistory}
-            </Text>
-          </TouchableOpacity>
+      {/* Sections with Improved Spacing and Design */}
+      <View style={styles.sectionsContainer}>
+        {/* Your Activities Section */}
+        <View style={[styles.section, styles.card]}>
+          <Text style={styles.sectionTitle}>{translations.yourActivities}</Text>
+          <View style={styles.activityRow}>
+            <TouchableOpacity
+              style={styles.activityButton}
+              onPress={() => navigation.navigate("LikedArticles")}
+            >
+              <View style={styles.activityIconContainer}>
+                <Icon name="heart" size={24} color="#CC0000" />
+              </View>
+              <Text style={styles.activityText} numberOfLines={1}>
+                {translations.likedArticles}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.activityButton}
+              onPress={() => {
+                navigation.navigate("ReadingHistory", {
+                  onGoBack: () => fetchUserData(),
+                });
+              }}
+            >
+              <View style={styles.activityIconContainer}>
+                <Icon name="history" size={24} color="#CC0000" />
+              </View>
+              <Text style={styles.activityText} numberOfLines={1}>
+                {translations.readingHistory}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      {/* Account Section */}
-      <View style={[styles.section, styles.card]}>
-        <Text style={styles.sectionTitle}>{translations.account}</Text>
-        <TouchableOpacity
-          style={styles.preferenceRow}
-          onPress={() => navigation.navigate("ChangePassword")}
-        >
-          <Icon name="lock" size={20} color="#CC0000" />
-          <Text style={styles.preferenceText}>
-            {translations.changePassword}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.preferenceRow} onPress={handleLogOut}>
-          <Icon name="sign-out" size={20} color="#CC0000" />
-          <Text style={[styles.preferenceText, styles.logoutText]}>
-            {translations.logOut}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Preferences Section */}
-      <View style={[styles.section, styles.card]}>
-        <Text style={styles.sectionTitle}>{translations.preferences}</Text>
-        <View style={styles.preferenceRow}>
-          <Icon name="moon-o" size={20} color="#CC0000" />
-          <Text style={styles.preferenceText}>{translations.darkMode}</Text>
-          <Switch value={isDarkMode} onValueChange={toggleDarkMode} />
+        {/* Account Section */}
+        <View style={[styles.section, styles.card]}>
+          <Text style={styles.sectionTitle}>{translations.account}</Text>
+          <View style={styles.preferenceList}>
+            <TouchableOpacity
+              style={styles.preferenceRow}
+              onPress={() => navigation.navigate("ChangePassword")}
+            >
+              <View style={styles.preferenceIconContainer}>
+                <Icon name="lock" size={20} color="#CC0000" />
+              </View>
+              <Text style={styles.preferenceText}>
+                {translations.changePassword}
+              </Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity
+              style={styles.preferenceRow}
+              onPress={handleLogOut}
+            >
+              <View style={styles.preferenceIconContainer}>
+                <Icon name="sign-out" size={20} color="#CC0000" />
+              </View>
+              <Text style={[styles.preferenceText, styles.logoutText]}>
+                {translations.logOut}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <TouchableOpacity
-          style={styles.preferenceRow}
-          onPress={() => navigation.navigate("LanguageLocation")}
-        >
-          <Icon name="globe" size={20} color="#CC0000" />
-          <Text style={styles.preferenceText}>
-            {translations.languageLocation}
-          </Text>
-        </TouchableOpacity>
+
+        {/* Preferences Section */}
+        <View style={[styles.section, styles.card]}>
+          <Text style={styles.sectionTitle}>{translations.preferences}</Text>
+          <View style={styles.preferenceList}>
+            <View style={styles.preferenceRow}>
+              <View style={styles.preferenceIconContainer}>
+                <Icon name="moon-o" size={20} color="#CC0000" />
+              </View>
+              <Text style={styles.preferenceText}>{translations.darkMode}</Text>
+              <Switch
+                value={isDarkMode}
+                onValueChange={toggleDarkMode}
+                trackColor={{ false: "#767577", true: "#CC0000" }}
+                thumbColor={isDarkMode ? "#fff" : "#f4f3f4"}
+              />
+            </View>
+            <View style={styles.divider} />
+            <TouchableOpacity
+              style={styles.preferenceRow}
+              onPress={() => navigation.navigate("LanguageLocation")}
+            >
+              <View style={styles.preferenceIconContainer}>
+                <Icon name="globe" size={20} color="#CC0000" />
+              </View>
+              <Text style={styles.preferenceText}>
+                {translations.languageLocation}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
     </ScrollView>
   );
@@ -279,19 +277,22 @@ const getStyles = (isDarkMode) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      paddingHorizontal: 16,
       backgroundColor: isDarkMode ? "#1a1a1a" : "#fff",
     },
-    header: {
+    headerContainer: {
       alignItems: "center",
-      marginVertical: 20,
-      marginTop: 100,
+      paddingVertical: 30,
+      backgroundColor: isDarkMode ? "#222" : "#f5f5f5",
+    },
+    profileImageWrapper: {
+      marginBottom: 15,
     },
     profileImage: {
-      width: 120,
-      height: 120,
-      borderRadius: 60,
-      marginBottom: 10,
+      width: 140,
+      height: 140,
+      borderRadius: 70,
+      borderWidth: 3,
+      borderColor: "#CC0000",
       backgroundColor: "#ddd",
     },
     editIconContainer: {
@@ -308,56 +309,81 @@ const getStyles = (isDarkMode) =>
       borderColor: "#fff",
     },
     userName: {
-      fontSize: 22,
+      fontSize: 24,
       fontWeight: "bold",
       color: isDarkMode ? "#fff" : "#000",
+      marginBottom: 5,
     },
     userEmail: {
-      fontSize: 14,
-      marginVertical: 4,
-      color: isDarkMode ? "#ccc" : "#000",
+      fontSize: 16,
+      color: isDarkMode ? "#ccc" : "#666",
+    },
+    sectionsContainer: {
+      paddingHorizontal: 15,
     },
     section: {
       marginVertical: 10,
-      borderRadius: 8,
-      padding: 10,
-      elevation: 2,
+      borderRadius: 12,
+      padding: 15,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
     },
     card: {
-      backgroundColor: isDarkMode ? "#333" : "#E0E0E0",
+      backgroundColor: isDarkMode ? "#333" : "#fff",
     },
     sectionTitle: {
       fontSize: 18,
       fontWeight: "bold",
       color: isDarkMode ? "#fff" : "#333",
-      marginBottom: 10,
+      marginBottom: 15,
     },
     activityRow: {
       flexDirection: "row",
       justifyContent: "space-around",
-      marginTop: 10,
     },
     activityButton: {
       alignItems: "center",
+      width: "45%",
+    },
+    activityIconContainer: {
+      backgroundColor: isDarkMode ? "#444" : "#f0f0f0",
+      padding: 15,
+      borderRadius: 50,
+      marginBottom: 10,
     },
     activityText: {
-      marginTop: 4,
       fontSize: 14,
       color: "#CC0000",
+      textAlign: "center",
+    },
+    preferenceList: {
+      borderRadius: 10,
+      overflow: "hidden",
     },
     preferenceRow: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
-      paddingVertical: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 5,
+    },
+    preferenceIconContainer: {
+      width: 40,
+      alignItems: "center",
     },
     preferenceText: {
+      flex: 1,
       fontSize: 16,
       color: isDarkMode ? "#fff" : "#333",
-      marginLeft: 10,
     },
     logoutText: {
       color: "#CC0000",
+    },
+    divider: {
+      height: 1,
+      backgroundColor: isDarkMode ? "#444" : "#e0e0e0",
     },
   });
 

@@ -28,11 +28,11 @@ const SignupScreen = ({ navigation }) => {
 
   const handleSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
-      Alert.alert("Error", "Please fill in all fields");
+      Alert.alert("Error", translations.fillAllFields);
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
+      Alert.alert("Error", translations.passwordsDoNotMatch);
       return;
     }
     try {
@@ -43,15 +43,25 @@ const SignupScreen = ({ navigation }) => {
       });
 
       const data = await response.json();
-      if (response.status === 201) {
-        Alert.alert("Success", "Account created successfully");
-        navigation.navigate("Login");
+      if (response.ok) {
+        Alert.alert("Success", translations.accountCreated, [
+          {
+            text: "OK",
+            onPress: () => {
+              // Replace instead of navigate to prevent stack buildup
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Login" }],
+              });
+            },
+          },
+        ]);
       } else {
-        Alert.alert("Error", data.error || "Sign-up failed");
+        Alert.alert("Error", data.error || translations.signUpFailed);
       }
     } catch (error) {
       console.error("Signup error:", error);
-      Alert.alert("Error", "Something went wrong");
+      Alert.alert("Error", translations.somethingWrong);
     }
   };
 

@@ -12,6 +12,7 @@ import {
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useTheme } from "./ThemeContext"; // Import useTheme
 import AsyncStorage from "@react-native-async-storage/async-storage";
+const defaultAuthorImage = require("../assets/allnews-logo-removebg-preview.png");
 
 const ArticleDetail = ({ route, navigation }) => {
   const { article } = route.params;
@@ -23,7 +24,6 @@ const ArticleDetail = ({ route, navigation }) => {
 
   // Daftar bahasa yang didukung (ditambah bahasa Indonesia, Rumania)
   const languages = {
-    auto: "Deteksi Otomatis",
     id: "Bahasa Indonesia",
     en: "English",
     es: "Español",
@@ -159,11 +159,16 @@ const ArticleDetail = ({ route, navigation }) => {
 
   console.log("Article data:", article); // Log untuk memeriksa data artikel
 
+  // Add this near the top of your component to load the default author image
+
   return (
     <ScrollView style={styles.container}>
       {/* Image and Overlay */}
       <View style={styles.imageContainer}>
-        <Image source={{ uri: article.image }} style={styles.image} />
+        <Image
+          source={article.image ? { uri: article.image } : defaultArticleImage}
+          style={styles.image}
+        />
         <View style={styles.overlay}>
           <Text style={styles.category}>{article.category || "Tech"}</Text>
           <Text style={styles.title}>{article.title}</Text>
@@ -177,21 +182,22 @@ const ArticleDetail = ({ route, navigation }) => {
       {/* Author Info */}
       <View style={styles.authorContainer}>
         <Image
-          source={{
-            uri: article.author_image || "https://via.placeholder.com/50",
-          }}
+          source={
+            article.author_image
+              ? { uri: article.author_image }
+              : defaultAuthorImage
+          }
           style={styles.authorImage}
         />
         <View>
-          <Text style={styles.authorName}>
-            {article.author || "Unknown Author"}
-          </Text>
+          <Text style={styles.authorName}>{article.author || "AllNews "}</Text>
           <Text style={styles.commentCount}>
             {article.comments || 12} comments
           </Text>
         </View>
       </View>
 
+      {/* Rest of your code remains the same */}
       {/* Language Selection */}
       <View style={styles.languageSelector}>
         <Text style={styles.languageLabel}>Pilih Bahasa Sumber:</Text>
@@ -209,7 +215,7 @@ const ArticleDetail = ({ route, navigation }) => {
               ]}
               onPress={() => {
                 setSelectedLanguage(code);
-                setTranslatedContent(""); // Reset terjemahan saat bahasa berubah
+                setTranslatedContent("");
                 setShowTranslation(false);
               }}
             >
@@ -252,10 +258,6 @@ const ArticleDetail = ({ route, navigation }) => {
           Related in {article.category || "Tech"}
         </Text>
         <TouchableOpacity style={styles.relatedCard}>
-          <Image
-            source={{ uri: "https://via.placeholder.com/100" }}
-            style={styles.relatedImage}
-          />
           <View style={styles.relatedContent}>
             <Text style={styles.relatedArticleTitle}>
               Tesla's quarterly profit surpasses $1 billion
