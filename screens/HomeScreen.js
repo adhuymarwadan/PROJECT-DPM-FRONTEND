@@ -85,7 +85,7 @@ const HomeScreen = ({ navigation, route }) => {
 
     // GNews API
     try {
-      const gNewsApiKey = "54996baa29bf545de341762142ef190d";
+      const gNewsApiKey = "607638d0b716b0e20b4dd3a283af3524";
       const gNewsUrl = `https://gnews.io/api/v4/top-headlines?category=${selectedCategory}&lang=id&country=id&apikey=${gNewsApiKey}`;
 
       const gNewsResponse = await fetch(gNewsUrl, {
@@ -200,7 +200,7 @@ const HomeScreen = ({ navigation, route }) => {
               Authorization: `Bearer ${token}`,
             },
           }
-        );  
+        );
 
         if (response.ok) {
           const data = await response.json();

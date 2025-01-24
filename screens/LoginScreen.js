@@ -70,7 +70,7 @@ const LoginScreen = ({ navigation }) => {
       setIsLoading(false);
     }
   };
-
+ 
   const handleLoginError = () => {
     Alert.alert(
       translations.alert.loginError,
